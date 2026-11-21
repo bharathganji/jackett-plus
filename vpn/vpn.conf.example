@@ -1,0 +1,24 @@
+# ==============================================================================
+# Generic OpenVPN Client Configuration Template
+# ==============================================================================
+# To use free OpenVPN configs:
+# 1. Download OpenVPN profile bundle (UDP 25000 / TCP 443) from:
+#    https://www.vpnbook.com/freevpn/openvpn
+# 2. Extract the archive and copy your desired .ovpn file to vpn/vpn.conf:
+#    cp vpnbook-fr2311-udp25000.ovpn vpn/vpn.conf
+# 3. Obtain current weekly password from https://www.vpnbook.com/freevpn/openvpn
+#    and configure VPN_AUTH in your .env file.
+
+client
+dev tun
+proto udp
+remote vpn.example.com 1194
+resolv-retry infinite
+nobind
+persist-key
+persist-tun
+remote-cert-tls server
+cipher AES-256-GCM
+auth SHA256
+auth-user-pass
+verb 3

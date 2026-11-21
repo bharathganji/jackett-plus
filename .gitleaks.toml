@@ -1,0 +1,20 @@
+[allowlist]
+description = "Global allowlist for tests, templates, and example documentation"
+paths = [
+  '''^\.env\.example$''',
+  '''^vpn/vpn\.conf\.example$''',
+  '''^services/ui/\.env\.example$''',
+  '''^services/api/\.env\.example$''',
+  '''^tests/.*''',
+  '''^services/api/tests/.*''',
+  '''^services/ui/src/.*'''
+]
+regexes = [
+  '''your_jackett_api_key_here''',
+  '''your_password_here''',
+  '''your_vpn_password''',
+  '''dummy_cookie''',
+  '''stale_cookie''',
+  '''new_fresh_cookie''',
+  '''test_key'''
+]

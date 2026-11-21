@@ -1,0 +1,26 @@
+# Environment & Secrets
+.env
+*.env.local
+vpn/vpn.conf
+!vpn/vpn.conf.example
+
+# Jackett configuration & runtime data
+data/
+!data/jackett/downloads/.gitkeep
+!data/jackett/config/.gitkeep
+
+# Node / Frontend
+services/ui/node_modules/
+services/ui/dist/
+services/ui/*.tsbuildinfo
+
+# Python / Backend
+services/api/__pycache__/
+services/api/*/__pycache__/
+services/api/*/*/__pycache__/
+services/api/.pytest_cache/
+services/api/.ruff_cache/
+services/api/*.pyc
+services/api/cache_dir/
+services/api/.env
+

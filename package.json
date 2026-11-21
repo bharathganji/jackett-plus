@@ -1,0 +1,24 @@
+{
+  "name": "jackett-plus",
+  "version": "1.0.0",
+  "description": "Unified, all-in-one Jackett torrent indexer suite with OpenVPN kill-switch, FastAPI streaming backend, and React 19 UI",
+  "private": true,
+  "scripts": {
+    "test": "npm run test:api && npm run test:ui",
+    "test:api": "cd services/api && pytest",
+    "test:ui": "cd services/ui && npm test",
+    "build:ui": "cd services/ui && npm run build",
+    "lint:ui": "cd services/ui && npm run lint",
+    "release": "semantic-release"
+  },
+  "devDependencies": {
+    "@semantic-release/changelog": "^6.0.3",
+    "@semantic-release/commit-analyzer": "^13.0.0",
+    "@semantic-release/git": "^10.0.1",
+    "@semantic-release/github": "^11.0.0",
+    "@semantic-release/release-notes-generator": "^14.0.0",
+    "conventional-changelog-conventionalcommits": "^8.0.0",
+    "semantic-release": "^24.2.0"
+  },
+  "license": "GPL-3.0-or-later"
+}

@@ -1,0 +1,101 @@
+services:
+  # ================================================================
+  # 1. VPN Gateway (Firewall & Network Namespace)
+  # ================================================================
+  vpn:
+    image: dperson/openvpn-client
+    container_name: jackett-vpn
+    restart: unless-stopped
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun
+    environment:
+      - VPN=${VPN_AUTH}
+      - FIREWALL=${VPN_FIREWALL:-}
+      - DNS=${VPN_DNS:-8.8.8.8,8.8.4.4}
+    volumes:
+      - ./vpn/vpn.conf:/vpn/vpn.conf:ro
+    ports:
+      # Search indexer (Jackett Native UI) & API host bindings (optional via SEARCH_PORT / API_PORT)
+      - "${HOST_IP:+${HOST_IP}:}${SEARCH_PORT:-${JACKETT_PORT:-9117}}:9117"
+      - "${HOST_IP:+${HOST_IP}:}${API_PORT:-9889}:9889"
+      - "${HOST_IP:+${HOST_IP}:}${FLARE_PORT:-8191}:8191"
+    networks:
+      - jackett_net
+
+  # ================================================================
+  # 2. FlareSolverr (Cloudflare Challenge Solver)
+  # ================================================================
+  flaresolverr:
+    image: ghcr.io/flaresolverr/flaresolverr:latest
+    container_name: jackett-flaresolverr
+    restart: unless-stopped
+    network_mode: "service:vpn"
+    environment:
+      - LOG_LEVEL=${FLARE_LOG_LEVEL:-info}
+      - LOG_HTML=false
+      - CAPTCHA_SOLVER=none
+      - TZ=${TZ:-Asia/Kolkata}
+    depends_on:
+      - vpn
+
+  # ================================================================
+  # 3. Jackett Torrent Indexer
+  # ================================================================
+  jackett:
+    image: linuxserver/jackett:latest
+    container_name: jackett-core
+    restart: unless-stopped
+    network_mode: "service:vpn"
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=${TZ:-Asia/Kolkata}
+      - AUTO_UPDATE=true
+      - FlareSolverr_API_URL=http://127.0.0.1:8191
+    volumes:
+      - ./data/jackett/config:/config
+      - ./data/jackett/downloads:/downloads
+    depends_on:
+      - vpn
+      - flaresolverr
+
+  # ================================================================
+  # 4. Jackett Python API (FastAPI Backend)
+  # ================================================================
+  api:
+    build:
+      context: ./services/api
+      dockerfile: Dockerfile
+    container_name: jackett-api
+    restart: unless-stopped
+    network_mode: "service:vpn"
+    environment:
+      - PORT=9889
+      - JACKETT_API_URL=http://127.0.0.1:9117
+      - API_KEY=${JACKETT_API_KEY}
+    depends_on:
+      - jackett
+
+  # ================================================================
+  # 5. Jackett Search UI (Nginx + React 19 Frontend)
+  # ================================================================
+  ui:
+    build:
+      context: ./services/ui
+      dockerfile: Dockerfile
+      args:
+        VITE_JACKETT_API_URL: ${FRONTEND_API_URL:-/api}
+    container_name: jackett-ui
+    restart: unless-stopped
+    ports:
+      - "${HOST_IP:+${HOST_IP}:}${UI_PORT:-3001}:80"
+    networks:
+      - jackett_net
+    depends_on:
+      - vpn
+
+networks:
+  jackett_net:
+    driver: bridge
