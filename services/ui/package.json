@@ -42,7 +42,7 @@
     "test": "vitest",
     "test:ui": "vitest --ui",
     "preview": "vite preview",
-    "prepare": "husky",
+    "prepare": "true",
     "release": "standard-version",
     "release:minor": "standard-version --release-as minor",
     "release:major": "standard-version --release-as major",
