@@ -1,0 +1,277 @@
+import { useState } from "react";
+
+import { Check, ChevronDown, Globe, Search } from "lucide-react";
+
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { getSafeUrl } from "@/lib/utils";
+
+import type { Indexer, IndexerSelectionState } from "../types/indexer";
+import { ErrorDisplay } from "./ErrorDisplay";
+import { LoadingState } from "./LoadingState";
+
+interface IndexerSelectorProps {
+  indexers: Indexer[];
+  loading: boolean;
+  error: string | null;
+  selectionState: IndexerSelectionState;
+  onSelectionChange: (state: IndexerSelectionState) => void;
+  onRefetch: () => void;
+}
+
+export function IndexerSelector({
+  indexers,
+  loading,
+  error,
+  selectionState,
+  onSelectionChange,
+  onRefetch,
+}: IndexerSelectorProps) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [searchFilter, setSearchFilter] = useState("");
+
+  const filteredIndexers = indexers.filter((indexer) =>
+    indexer.id.toLowerCase().includes(searchFilter.toLowerCase())
+  );
+
+  const handleIndexerToggle = (indexerId: string) => {
+    const isSelected = selectionState.selectedIndexers.includes(indexerId);
+    const newSelected = isSelected
+      ? selectionState.selectedIndexers.filter((id) => id !== indexerId)
+      : [...selectionState.selectedIndexers, indexerId];
+
+    onSelectionChange({
+      ...selectionState,
+      selectedIndexers: newSelected,
+    });
+  };
+
+  const handleSelectAll = () => {
+    onSelectionChange({
+      ...selectionState,
+      selectedIndexers: indexers.map((i) => i.id),
+    });
+  };
+
+  const handleSelectNone = () => {
+    onSelectionChange({
+      ...selectionState,
+      selectedIndexers: [],
+    });
+  };
+
+  const handleModeChange = (mode: "all" | "selected") => {
+    onSelectionChange({
+      ...selectionState,
+      searchMode: mode,
+    });
+  };
+
+  if (loading) {
+    return <LoadingState message="Loading indexers..." />;
+  }
+
+  if (error) {
+    return <ErrorDisplay error={error} onRetry={onRefetch} />;
+  }
+
+  return (
+    <Card className="border-border bg-background shadow-sm rounded-lg overflow-hidden">
+      <CardHeader className="p-3 sm:p-6 sm:pb-3 border-b border-border/20">
+        <div className="flex items-center justify-between mb-3 sm:mb-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-primary/10 rounded-lg">
+              <Globe className="h-4 w-4 text-primary" />
+            </div>
+            <span className="text-sm font-bold tracking-tight text-foreground/80 uppercase text-[11px]">
+              Indexers ({indexers.length})
+            </span>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setIsExpanded(!isExpanded)}
+            aria-expanded={isExpanded}
+            aria-label={
+              isExpanded
+                ? "Collapse indexer selection"
+                : "Expand indexer selection"
+            }
+            className="h-9 w-9 p-0 rounded-full hover:bg-primary/10 transition-colors focus-visible:ring-2 focus-visible:ring-primary"
+          >
+            <ChevronDown
+              className={`h-4 w-4 transition-transform duration-500 ${
+                isExpanded ? "rotate-180" : ""
+              }`}
+            />
+          </Button>
+        </div>
+
+        {/* Search Mode Toggle */}
+        <div className="flex gap-2">
+          <Button
+            variant={
+              selectionState.searchMode === "all" ? "default" : "outline"
+            }
+            size="sm"
+            onClick={() => handleModeChange("all")}
+            className={`flex-1 flex items-center justify-center gap-2 h-9 rounded-full transition-all duration-300 shadow-sm ${
+              selectionState.searchMode === "all"
+                ? "bg-primary border-none text-primary-foreground font-semibold"
+                : "border-border/60 hover:border-primary/50 hover:bg-primary/5"
+            }`}
+          >
+            <Search className="h-3.5 w-3.5" />
+            <span className="text-xs">All Indexers</span>
+          </Button>
+          <Button
+            variant={
+              selectionState.searchMode === "selected" ? "default" : "outline"
+            }
+            size="sm"
+            onClick={() => handleModeChange("selected")}
+            className={`flex-1 flex items-center justify-center gap-2 h-9 rounded-full transition-all duration-300 shadow-sm ${
+              selectionState.searchMode === "selected"
+                ? "bg-primary border-none text-primary-foreground font-semibold"
+                : "border-border/60 hover:border-primary/50 hover:bg-primary/5"
+            }`}
+            disabled={selectionState.selectedIndexers.length === 0}
+          >
+            <Check className="h-3.5 w-3.5" />
+            <span className="text-xs">
+              Selected ({selectionState.selectedIndexers.length})
+            </span>
+          </Button>
+        </div>
+      </CardHeader>
+
+      <div
+        className={`overflow-hidden transition-all duration-500 ease-in-out ${
+          isExpanded ? "max-h-[600px] opacity-100" : "max-h-0 opacity-0"
+        }`}
+      >
+        <CardContent className="pt-6">
+          <div className="space-y-6">
+            {/* Search and Controls */}
+            <div className="flex flex-col sm:flex-row gap-3">
+              <div className="relative flex-1 group">
+                <Input
+                  placeholder="Filter indexers..."
+                  value={searchFilter}
+                  onChange={(e) => setSearchFilter(e.target.value)}
+                  className="h-10 pl-10 bg-secondary/30 border border-border/60 focus:border-ring focus:ring-4 focus:ring-ring/20 transition-all rounded-full shadow-sm"
+                />
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleSelectAll}
+                  className="px-4 bg-secondary/50 border border-border/60 hover:border-primary/50 hover:bg-primary/5 rounded-full transition-all font-semibold text-xs shadow-sm"
+                >
+                  All
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleSelectNone}
+                  className="px-4 bg-secondary/50 border border-border/60 hover:border-primary/50 hover:bg-primary/5 rounded-full transition-all font-semibold text-xs shadow-sm"
+                >
+                  None
+                </Button>
+              </div>
+            </div>
+
+            {/* Indexer List */}
+            <div className="max-h-60 overflow-y-auto pr-2 custom-scrollbar">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                {filteredIndexers.map((indexer) => {
+                  const isSelected = selectionState.selectedIndexers.includes(
+                    indexer.id
+                  );
+                  return (
+                    <div
+                      key={indexer.id}
+                      role="checkbox"
+                      aria-checked={isSelected}
+                      tabIndex={0}
+                      className={`flex items-center justify-between p-3 min-h-[44px] rounded-xl border transition-all duration-300 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
+                        isSelected
+                          ? "bg-primary/15 border-primary/50 shadow-sm"
+                          : "bg-secondary/30 border-border/40 hover:border-primary/40 hover:bg-primary/5"
+                      }`}
+                      onClick={() => handleIndexerToggle(indexer.id)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          handleIndexerToggle(indexer.id);
+                        }
+                      }}
+                    >
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <div
+                          className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all duration-300 ${
+                            isSelected
+                              ? "bg-primary border-primary"
+                              : "border-muted-foreground/30"
+                          }`}
+                        >
+                          {isSelected && (
+                            <Check className="h-3 w-3 text-primary-foreground stroke-[3px]" />
+                          )}
+                        </div>
+                        <span
+                          className={`text-sm font-semibold truncate ${isSelected ? "text-primary" : "text-foreground/80"}`}
+                        >
+                          {indexer.id}
+                        </span>
+                      </div>
+                      <a
+                        href={getSafeUrl(indexer.site_link)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label={`Visit ${indexer.id} website`}
+                        onClick={(e) => e.stopPropagation()}
+                        className="text-muted-foreground hover:text-primary hover:bg-primary/10 p-2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full transition-all focus-visible:ring-2 focus-visible:ring-primary"
+                      >
+                        <Globe className="h-4 w-4" />
+                      </a>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Selected Summary */}
+            {selectionState.selectedIndexers.length > 0 && (
+              <div className="pt-4 border-t border-border/30">
+                <div className="flex flex-wrap gap-2">
+                  {selectionState.selectedIndexers.slice(0, 15).map((id) => (
+                    <Badge
+                      key={id}
+                      variant="outline"
+                      className="px-3 py-1 bg-primary/15 border-primary/30 text-primary font-bold text-[10px] rounded-full shadow-sm"
+                    >
+                      {id}
+                    </Badge>
+                  ))}
+                  {selectionState.selectedIndexers.length > 15 && (
+                    <Badge
+                      variant="outline"
+                      className="px-3 py-1 bg-secondary/50 border-border/60 text-muted-foreground text-[10px] font-bold rounded-full shadow-sm"
+                    >
+                      +{selectionState.selectedIndexers.length - 15} MORE
+                    </Badge>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </div>
+    </Card>
+  );
+}
